@@ -1,0 +1,77 @@
+# Production stack for the single VPS. Only Caddy is exposed to the internet;
+# everything else talks over the internal network.
+#
+# Mail is deliberately isolated so it can be moved to its own machine later
+# by changing configuration, not code.
+name: bmf
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports: ['80:80', '443:443']
+    volumes:
+      - ../configs/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+    networks: [edge, internal]
+
+  server:
+    image: ghcr.io/bmf-messenger/bmf-server:latest
+    restart: unless-stopped
+    env_file: [../.env.prod]
+    depends_on: [postgres, redis, minio]
+    networks: [internal]
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file: [../.env.prod]
+    volumes: ['pgdata:/var/lib/postgresql/data']
+    networks: [internal]
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes: ['redisdata:/data']
+    networks: [internal]
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    env_file: [../.env.prod]
+    volumes: ['miniodata:/data']
+    networks: [internal]
+
+  livekit:
+    image: livekit/livekit-server:latest
+    restart: unless-stopped
+    command: --config /etc/livekit.yaml
+    volumes: ['../configs/livekit.yaml:/etc/livekit.yaml:ro']
+    network_mode: host   # SFU needs the real UDP port range
+
+  coturn:
+    image: coturn/coturn:latest
+    restart: unless-stopped
+    volumes: ['../configs/turnserver.conf:/etc/coturn/turnserver.conf:ro']
+    network_mode: host   # TURN relays raw UDP
+
+  mail:
+    image: stalwartlabs/mail-server:latest
+    restart: unless-stopped
+    ports: ['25:25', '465:465', '587:587', '993:993']
+    volumes: ['maildata:/opt/stalwart-mail']
+    networks: [edge]
+
+networks:
+  edge:
+  internal:
+    internal: true
+
+volumes:
+  caddydata:
+  pgdata:
+  redisdata:
+  miniodata:
+  maildata:

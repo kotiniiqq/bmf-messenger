@@ -1,0 +1,42 @@
+{
+  "name": "@bmf/desktop",
+  "version": "0.3.2",
+  "private": true,
+  "type": "module",
+  "main": "dist-electron/main.cjs",
+  "description": "Electron shell and React UI.",
+  "scripts": {
+    "dev": "concurrently -k \"vite\" \"npm:dev:electron\"",
+    "dev:electron": "npm run build:electron && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .",
+    "build:renderer": "vite build",
+    "build:electron": "tsc -p tsconfig.electron.json --noEmit && node scripts/build-electron.mjs",
+    "build": "npm run build:renderer && npm run build:electron",
+    "package": "npm run build && electron-builder --win nsis portable --publish never",
+    "package:linux": "npm run build && electron-builder --linux AppImage deb --publish never"
+  },
+  "devDependencies": {
+    "@bmf/shared": "*",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "concurrently": "^9.0.0",
+    "cross-env": "^10.1.0",
+    "electron": "32.3.3",
+    "electron-builder": "^25.0.0",
+    "electron-updater": "^6.3.0",
+    "esbuild": "^0.24.0",
+    "livekit-client": "^2.21.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "vite": "^5.4.0",
+    "zustand": "^5.0.0"
+  },
+  "author": {
+    "name": "BMF Messenger",
+    "email": "team@bmf.ink"
+  },
+  "homepage": "https://bmf.ink",
+  "dependencies": {
+    "@signalapp/libsignal-client": "0.99.3"
+  }
+}

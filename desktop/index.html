@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!--
+      Renderer never talks to anything but our own services; no remote code, ever.
+
+      livekit.bmf.ink is the call signalling socket. It is listed separately from
+      the API rather than by widening the rule, so this line stays a readable
+      inventory of everywhere the client is allowed to reach.
+
+      The relay itself needs no entry: STUN and TURN are WebRTC, not fetch, and
+      connect-src does not govern them. media-src covers the tracks once they
+      arrive as blob URLs.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; connect-src 'self' https://api.bmf.ink wss://api.bmf.ink https://livekit.bmf.ink wss://livekit.bmf.ink http://localhost:3000 ws://localhost:3000 ws://localhost:7880 http://localhost:7880; img-src 'self' data: blob: http://localhost:9000 https://api.bmf.ink; media-src 'self' blob: mediastream:; style-src 'self' 'unsafe-inline'"
+    />
+    <title>BMF Messenger</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

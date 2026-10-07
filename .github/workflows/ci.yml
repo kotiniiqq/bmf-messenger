@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: bmf
+          POSTGRES_PASSWORD: bmf
+          POSTGRES_DB: bmf_test
+        options: >-
+          --health-cmd "pg_isready -U bmf"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+        ports: ['5432:5432']
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+        ports: ['6379:6379']
+
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgres://bmf:bmf@localhost:5432/bmf_test
+      REDIS_URL: redis://localhost:6379
+      JWT_ACCESS_SECRET: test-secret-value-at-least-32-chars
+      JWT_REFRESH_SECRET: test-secret-value-at-least-32-char2
+      S3_ENDPOINT: http://localhost:9000
+      S3_ACCESS_KEY: bmfminio
+      S3_SECRET_KEY: bmfminio-secret
+      # No LiveKit or coturn runs in CI; these only have to be present and
+      # well-formed. The call tests check who is allowed to join and what the
+      # server hands back, not whether media flows — that needs two NATs and a
+      # human, and is a stage-4 exit criterion rather than a unit of CI.
+      LIVEKIT_URL: wss://livekit.test
+      LIVEKIT_API_KEY: test-key
+      LIVEKIT_API_SECRET: test-secret-value-at-least-32-chars
+      TURN_SECRET: test-turn-secret-value
+      TURN_HOST: turn.test
+      # Encrypts stored mailbox passwords. No IMAP server runs in CI — the mail
+      # tests cover who may see what, how the list pages and what reading does,
+      # which is the half that does not need somebody else's mailbox.
+      MAIL_SECRET: test-mail-secret-value-at-least-32-chars
+
+    steps:
+      # Started as a step, not a service: services cannot override the container
+      # command, and the MinIO image needs "server /data" to do anything.
+      - name: Start MinIO
+        run: |
+          docker run -d --name minio -p 9000:9000 \
+            -e MINIO_ROOT_USER=bmfminio \
+            -e MINIO_ROOT_PASSWORD=bmfminio-secret \
+            minio/minio:latest server /data
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:9000/minio/health/live && break
+            sleep 2
+          done
+
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build
+      # The root build covers shared and server only, so nothing here used to
+      # compile the desktop bundle — and a break in it surfaced on the release
+      # tag, after the merge, which is the most expensive place to find it.
+      # This does not package an installer; it is the compile, which is the part
+      # that fails.
+      - run: npm run build -w desktop
+      # Tests need a real schema. Running migrations here also proves every pair
+      # applies cleanly to an empty database.
+      - run: npm run db:migrate
+      - run: npm test

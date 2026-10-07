@@ -1,0 +1,4 @@
+# Development happens on Windows, the server runs Linux. Normalise in the
+# repository and check out LF everywhere — a shell script with CRLF line endings
+# fails on Linux with "bad interpreter", which reads like the file is missing.
+* text=auto eol=lf

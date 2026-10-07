@@ -1,0 +1,22 @@
+node_modules/
+dist/
+dist-electron/
+build/
+# ...except electron-builder's, which is an input and not an output: the app
+# icon lives there. Ignoring it shipped a build with no icon and, once the build
+# started reading the file, a tag that could not compile at all.
+!desktop/build/
+release/
+coverage/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+# Not a secret: the API address is compiled into every client we ship, and it
+# has to reach CI or the build silently falls back to localhost.
+!desktop/.env.production
+*.log
+.DS_Store
+
+*.mmdb
+server/data/

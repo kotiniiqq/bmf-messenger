@@ -1,0 +1,25 @@
+# LiveKit for the beta host. No secrets here: the API key and secret arrive as
+# LIVEKIT_KEYS from .env.beta, which is generated on the box and never leaves it.
+port: 7880
+
+rtc:
+  tcp_port: 7881
+  udp_port: 7882
+  # OpenVZ gives the container the public address directly, but leaving this on
+  # costs nothing and keeps the config honest if the host ever moves behind NAT.
+  use_external_ip: true
+
+# The spec fixes coturn as the TURN server, so LiveKit's own is off. Clients are
+# handed relay credentials by our API when a call starts — short-lived ones, so
+# nothing long-lived has to be baked into a config or shipped to a client.
+turn:
+  enabled: false
+
+# Room state lives in Redis so a restart of the signalling server does not drop
+# every call in progress.
+redis:
+  address: redis:6379
+
+logging:
+  level: info
+  json: false

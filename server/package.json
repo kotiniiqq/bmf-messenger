@@ -1,0 +1,42 @@
+{
+  "name": "@bmf/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -b && node scripts/copy-migrations.mjs",
+    "dev": "node --env-file=.env --watch --import tsx src/main.ts",
+    "start": "node dist/main.js",
+    "migrate": "node dist/db/migrate.js up",
+    "rollback": "node dist/db/migrate.js down",
+    "geoip": "node scripts/fetch-geoip.mjs"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1100.0",
+    "@aws-sdk/s3-request-presigner": "^3.1100.0",
+    "@bmf/shared": "*",
+    "@fastify/cors": "^10.0.0",
+    "@fastify/helmet": "^12.0.0",
+    "@fastify/multipart": "^10.1.0",
+    "@fastify/rate-limit": "^10.1.0",
+    "@sentry/node": "^8.33.0",
+    "argon2": "^0.41.0",
+    "fastify": "^5.0.0",
+    "imapflow": "^1.6.5",
+    "ioredis": "^5.4.0",
+    "jose": "^5.9.0",
+    "mailparser": "^3.9.14",
+    "maxmind": "^4.3.0",
+    "pino": "^9.4.0",
+    "postgres": "^3.4.4",
+    "prom-client": "^15.1.3",
+    "ws": "^8.18.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/mailparser": "^3.4.6",
+    "@types/ws": "^8.5.12",
+    "pino-pretty": "^11.2.2",
+    "tsx": "^4.19.0"
+  }
+}

@@ -1,0 +1,12 @@
+node_modules
+**/node_modules
+**/dist
+**/dist-electron
+**/release
+.git
+**/.env
+**/data
+*.mmdb
+# Incremental build state. A stale one makes `tsc -b` skip work whose output is
+# absent from the image, and the failure surfaces as "cannot find @bmf/shared".
+**/*.tsbuildinfo

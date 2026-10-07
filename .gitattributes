@@ -1,0 +1,9 @@
+# Development happens on Windows, CI and the server run Linux. Normalise in the
+# repository and check out LF everywhere so shell scripts stay executable.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.webp binary
+*.ico binary
+*.mmdb binary

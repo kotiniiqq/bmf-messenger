@@ -1,0 +1,101 @@
+name: Build desktop
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+# Auto-update needs a published release to find. Pushing a tag builds every
+# target and publishes them to bmf-releases; a manual run only builds, so
+# artifacts can be inspected without anyone being offered them.
+env:
+  PUBLISH: ${{ startsWith(github.ref, 'refs/tags/v') && 'always' || 'never' }}
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # A tag that disagrees with package.json is how a release ends up
+      # advertising a version nobody is running: latest.yml names the tag while
+      # the binary reports something else, and clients then see an update that
+      # changes nothing after it installs — every check, forever.
+      - name: Check the tag matches the version
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          version=$(node -p "require('./desktop/package.json').version")
+          if [ "$tag" != "$version" ]; then
+            echo "tag $GITHUB_REF_NAME does not match desktop/package.json version $version" >&2
+            exit 1
+          fi
+
+      - run: npm ci
+      # The client imports types and constants from shared, so it has to exist first.
+      - run: npm run build -w shared
+      - run: npm run build -w desktop
+
+      - name: Build installer
+        run: npx electron-builder --win nsis portable --publish $env:PUBLISH
+        working-directory: desktop
+        env:
+          # No certificate yet; without this electron-builder hunts for one and
+          # fails the build instead of producing an unsigned binary.
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+          # Publishing targets bmf-releases, a different repository, so this
+          # workflow's own GITHUB_TOKEN cannot reach it. RELEASES_TOKEN is a PAT
+          # with contents:write on bmf-releases and nothing else.
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+
+      # A tag run publishes to bmf-releases, which is the artifact. Uploading a
+      # second copy into Actions only spends the storage quota — and when that
+      # quota runs out the step fails, taking the release with it. Keep the
+      # copies for manual runs, which publish nothing and are the only case
+      # where inspecting a build by hand is the point.
+      - uses: actions/upload-artifact@v4
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+        with:
+          name: bmf-messenger-windows
+          path: |
+            desktop/release/*.exe
+            desktop/release/*.blockmap
+            desktop/release/latest.yml
+          retention-days: 30
+
+  linux:
+    runs-on: ubuntu-latest
+    # Both jobs publish into the same release. Running them together would race
+    # to create it; waiting costs a few minutes and nothing else.
+    needs: windows
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build -w shared
+      - run: npm run build -w desktop
+
+      - name: Build packages
+        run: npx electron-builder --linux AppImage deb --publish $PUBLISH
+        working-directory: desktop
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+        with:
+          name: bmf-messenger-linux
+          path: |
+            desktop/release/*.AppImage
+            desktop/release/*.deb
+            desktop/release/latest-linux.yml
+          retention-days: 30

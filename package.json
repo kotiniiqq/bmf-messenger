@@ -1,0 +1,41 @@
+{
+  "name": "bmf-app",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "shared",
+    "server",
+    "desktop"
+  ],
+  "scripts": {
+    "build": "npm run build -w shared && npm run build -w server",
+    "dev": "npm run dev -w server",
+    "lint": "eslint . && node scripts/check-classes.mjs && node scripts/check-strings.mjs",
+    "typecheck": "tsc -b --pretty false && tsc -p desktop/tsconfig.json --pretty false && tsc -p desktop/tsconfig.electron.json --pretty false",
+    "test": "vitest run",
+    "db:migrate": "npm run migrate -w server",
+    "db:rollback": "npm run rollback -w server",
+    "fetch:build": "node scripts/fetch-build.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.12.0",
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^22.7.0",
+    "eslint": "^9.12.0",
+    "jsdom": "^30.0.1",
+    "typescript": "^5.6.0",
+    "typescript-eslint": "^8.8.0",
+    "vitest": "^2.1.0"
+  },
+  "allowScripts": {
+    "electron@32.3.3": true,
+    "esbuild@0.21.5": true,
+    "esbuild@0.24.2": true,
+    "esbuild@0.28.1": true,
+    "argon2@0.41.1": true,
+    "@signalapp/libsignal-client@0.99.3": false
+  }
+}

@@ -1,0 +1,19 @@
+[Unit]
+Description=Widen the Docker devices cgroup ceiling
+Documentation=file:/usr/local/sbin/docker-device-ceiling.sh
+# The ceiling is written by the daemon as it starts, so this has to run after it.
+# Running before would simply be overwritten. PartOf makes systemd re-run this on
+# every restart of the daemon, which is exactly when the ceiling is reset.
+After=docker.service
+Requires=docker.service
+PartOf=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/docker-device-ceiling.sh
+
+[Install]
+# multi-user.target covers a plain boot; docker.service covers the daemon being
+# restarted on its own, without one.
+WantedBy=multi-user.target docker.service

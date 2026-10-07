@@ -1,0 +1,75 @@
+appId: ink.bmf.messenger
+productName: BMF Messenger
+copyright: BMF Messenger
+
+# The workspace is named @bmf/desktop, and the slash makes the default artifact
+# path resolve into a directory that does not exist. Name the files explicitly.
+artifactName: BMF-Messenger-${version}-${arch}.${ext}
+
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - dist/**/*
+  - dist-electron/**/*
+  - package.json
+
+# The renderer bundles everything it needs, and so does the main process — with
+# one exception. libsignal's compiled library cannot be loaded from inside an
+# archive, so it is unpacked next to it. Without this the privacy mode fails at
+# the first attempt to use it, in a packaged build only.
+asar: true
+asarUnpack:
+  # Matched wherever electron-builder decides to place the vendored package —
+  # it normalises node_modules paths, and the first attempt at this pinned the
+  # directory it was written to rather than the one it ended up in.
+  - '**/@signalapp/**'
+  - '**/*.node'
+
+# Auto-update pulls from the public releases repo. The private monorepo must never
+# be the update source: that would require shipping a token inside the client.
+publish:
+  provider: github
+  owner: bmf-messenger
+  repo: bmf-releases
+  releaseType: release
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+  # Portable keeps the plain name so it reads as "run me, no install".
+  # No code-signing certificate yet, so SmartScreen will warn on first install.
+  # Documented in CONTRIBUTING.md as a known constraint, not a defect.
+  signAndEditExecutable: true
+
+nsis:
+  # Both Windows targets produce an .exe; without distinct names the second
+  # overwrites the first and only one of them survives.
+  artifactName: BMF-Messenger-Setup-${version}-${arch}.${ext}
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: BMF Messenger
+  deleteAppDataOnUninstall: false
+
+linux:
+  executableName: bmf-messenger
+  target:
+    - AppImage
+    - deb
+  category: Network
+  synopsis: Desktop messenger with mail, notes and music
+
+# Electron is hoisted to the workspace root, so the version cannot be inferred here.
+electronVersion: 32.3.3
+
+# The client has no runtime dependencies; skipping this avoids electron-builder
+# running npm install inside a workspace and clobbering the hoisted node_modules.
+npmRebuild: false
+buildDependenciesFromSource: false

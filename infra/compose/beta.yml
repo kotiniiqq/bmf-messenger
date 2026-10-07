@@ -1,0 +1,113 @@
+# Beta stack for the single VPS. Only Caddy is exposed; everything else stays on
+# the internal network — except the media services, which cannot work that way.
+# Mail arrives in stage 3.
+name: bmf
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports: ['80:80', '443:443']
+    volumes:
+      - ../configs/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+      - caddyconfig:/config
+    networks: [edge, internal]
+    depends_on: [server]
+
+  server:
+    build:
+      context: ../../bmf-app
+      dockerfile: server/Dockerfile
+    restart: unless-stopped
+    env_file: [../../.env.beta]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_started }
+      minio: { condition: service_started }
+    networks: [internal]
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file: [../../.env.beta]
+    volumes: ['pgdata:/var/lib/postgresql/data']
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U bmf']
+      interval: 5s
+      retries: 10
+    networks: [internal]
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes: ['redisdata:/data']
+    networks: [internal]
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data
+    env_file: [../../.env.beta]
+    volumes: ['miniodata:/data']
+    networks: [internal]
+
+  # Media cannot hide behind the internal network: WebRTC needs the participant's
+  # packets to arrive on a port of this host directly. Only the signalling side
+  # (7880) goes through Caddy; 7881/7882 carry the media itself and are the ports
+  # UFW already allows.
+  livekit:
+    # Pinned, and not below 1.13: livekit-client 2.x speaks signalling protocol
+    # 17, and an older server answers it well enough to connect and publish —
+    # then fails negotiation fifteen seconds in, forever. It looks like a network
+    # problem and is not one.
+    image: livekit/livekit-server:v1.13
+    restart: unless-stopped
+    command: ['--config', '/etc/livekit.yaml']
+    volumes:
+      - ../configs/livekit/livekit.yaml:/etc/livekit.yaml:ro
+    env_file: [../../.env.beta]
+    ports:
+      - '7881:7881/tcp'
+      - '7882:7882/udp'
+    networks: [edge, internal]
+
+  # LiveKit can relay by itself, but the spec fixes coturn as the TURN server, and
+  # a separate one can be moved to its own host later without touching LiveKit.
+  # Host networking, not a bridge. On a bridge coturn discovers the container's
+  # own 172.x address and hands it out as the relay candidate, which is useless
+  # to anyone outside — and publishing the relay range would mean forty-odd
+  # docker-proxy mappings for UDP. On the host it sees the real interface.
+  #
+  # Ports are not published for the same reason: it already listens on 3478 and
+  # 49160-49200 of the host, and UFW is what decides who reaches them.
+  coturn:
+    image: coturn/coturn:4.6-alpine
+    restart: unless-stopped
+    network_mode: host
+    # The secret comes from the environment inside the container, not from
+    # compose's own substitution — hence `$$`. That keeps it in .env.beta and out
+    # of both this file and the coturn config.
+    entrypoint: ['/bin/sh', '-c']
+    command:
+      - >-
+        exec turnserver -c /etc/coturn/turnserver.conf
+        --static-auth-secret "$$TURN_SECRET"
+        --listening-ip "$$PUBLIC_IP"
+        --relay-ip "$$PUBLIC_IP"
+    env_file: [../../.env.beta]
+    volumes:
+      - ../configs/coturn/turnserver.conf:/etc/coturn/turnserver.conf:ro
+
+networks:
+  edge:
+  internal:
+    internal: true
+
+volumes:
+  caddydata:
+  caddyconfig:
+  pgdata:
+  redisdata:
+  miniodata:

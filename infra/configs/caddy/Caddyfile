@@ -1,0 +1,19 @@
+# Automatic TLS from Let's Encrypt. api.bmf.ink is the only public entry point;
+# WebSocket upgrades pass through on the same host.
+api.bmf.ink {
+	encode zstd gzip
+	reverse_proxy server:3000
+}
+
+# LiveKit's signalling is a WebSocket and needs TLS the same way the API does.
+# Only this port goes through Caddy — the media travels on 7881/7882 directly,
+# because routing WebRTC through a reverse proxy is how calls get one-way audio.
+livekit.bmf.ink {
+	reverse_proxy livekit:7880
+}
+
+# The marketing site does not exist yet; answering keeps the certificate warm
+# and avoids a confusing connection error.
+app.bmf.ink, www.bmf.ink, bmf.ink {
+	respond "BMF Messenger — beta. Download the client from the release page." 200
+}

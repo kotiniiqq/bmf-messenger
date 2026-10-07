@@ -1,0 +1,1037 @@
+/* The prototype's stylesheet, copied verbatim from docs/ui-prototype.html — it is
+   the source of truth for how this looks. Components reuse its class names. */
+@import './prototype.css';
+
+/* The window has no system frame (`frame: false`), so `.tbar` is what the user
+   drags the window by. The prototype runs in a browser and could not know about
+   this, which is why these rules live here rather than in its stylesheet.
+
+   A drag region swallows clicks, so everything interactive inside the bar has to
+   opt back out. The logo stays draggable on purpose: it is the one wide, inert
+   stretch of header, and dragging a window by its title is what people try. */
+.tbar {
+  -webkit-app-region: drag;
+}
+
+.tbar .dock,
+.tbar .pill-wrap,
+.tbar button,
+.tbar .wc-wind {
+  -webkit-app-region: no-drag;
+}
+
+/* ── THE CALL ──────────────────────────────────────────────────────────────
+   The prototype draws a call *history* and no call screen, so this is the one
+   surface built rather than ported. It stays inside the prototype's vocabulary:
+   its variables, its radii, its `.circ` window buttons, its `.pill` for the
+   folded state. Dark on purpose — video reads badly against a light panel. */
+
+.call-root {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: #11121a;
+  color: #f2f3f8;
+  overflow: hidden;
+}
+
+.call-bar-top {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  flex-shrink: 0;
+  /* The whole strip drags the window; the buttons opt out below. */
+  -webkit-app-region: drag;
+}
+
+.call-bar-top .wc-wind {
+  -webkit-app-region: no-drag;
+}
+
+.call-who {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: rgba(242, 243, 248, 0.85);
+}
+
+.call-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f59e0b;
+}
+
+.call-dot[data-live='true'] {
+  background: #22c55e;
+}
+
+.call-stage {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px 12px;
+  min-height: 0;
+}
+
+.call-grid {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  height: 100%;
+  place-content: center;
+  grid-template-columns: 1fr;
+}
+
+/* Four is where a single row stops being readable at 900px wide. */
+.call-grid[data-count='2'],
+.call-grid[data-count='3'],
+.call-grid[data-count='4'] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.call-grid[data-count='5'],
+.call-grid[data-count='6'],
+.call-grid[data-count='7'],
+.call-grid[data-count='8'],
+.call-grid[data-count='9'] {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* The tile follows the camera's aspect ratio rather than imposing one — the
+   spec is explicit, because a 4:3 camera forced into 16:9 loses the top of
+   everyone's head. The ratio itself is set inline from track metadata. */
+.call-tile {
+  position: relative;
+  min-width: 0;
+  max-height: 100%;
+  margin: 0 auto;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #1b1d29;
+  border: 2px solid transparent;
+  transition: border-color 0.18s ease;
+}
+
+.call-tile.speaking {
+  border-color: var(--acc);
+}
+
+/* Fit by default: the tile already carries the source's aspect ratio, so
+   `contain` shows the whole frame with nothing left over. Fill is the opt-in
+   for when a stray letterbox is more annoying than a cropped edge. */
+.call-video,
+.call-video video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.call-tile[data-fill='true'] .call-video video {
+  object-fit: cover;
+}
+
+/* A shared screen is the reason everyone is looking, so it takes the width and
+   the faces line up underneath it. */
+.call-grid[data-screen='true'] {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.call-grid[data-screen='true'] .call-tile[data-source='screen'] {
+  grid-column: 1 / -1;
+  max-height: 68vh;
+}
+
+.call-avatar {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 26px;
+  font-weight: 800;
+  color: rgba(242, 243, 248, 0.7);
+  background: linear-gradient(135deg, #2a2d3d, #1b1d29);
+}
+
+.call-name {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11.5px;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.call-self {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  width: 168px;
+  border-radius: 12px;
+  background: #1b1d29;
+  object-fit: cover;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.call-self.off {
+  display: none;
+}
+
+/* Centred on the stage rather than laid out in it. As a flex child it had to
+   share the row with `.call-grid`, which is full width — so the text was
+   squeezed against the left edge instead of sitting in the middle of nothing. */
+.call-note {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  max-width: 78%;
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(242, 243, 248, 0.65);
+  text-align: center;
+  padding: 10px 14px;
+}
+
+/* One bar, bottom centre, gone after three idle seconds (spec section 7). */
+.call-ctl {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translate(-50%, 12px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 22px;
+  background: rgba(20, 21, 30, 0.86);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.call-ctl.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  pointer-events: auto;
+}
+
+.call-btn {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.call-btn svg {
+  width: 19px;
+  height: 19px;
+  stroke: #f2f3f8;
+  stroke-width: 2;
+  fill: none;
+}
+
+.call-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* Off is the state worth seeing at a glance: a muted microphone nobody notices
+   is the oldest failure in video calls. */
+.call-btn.off {
+  background: rgba(239, 68, 68, 0.22);
+}
+
+.call-btn.off svg {
+  stroke: #fca5a5;
+}
+
+.call-btn.on {
+  background: rgba(124, 108, 248, 0.32);
+}
+
+.call-btn.end {
+  background: #ef4444;
+}
+
+.call-btn.end:hover {
+  background: #dc2626;
+}
+
+/* ── THE FLOATING BLOCK ────────────────────────────────────────────────────
+   Its own always-on-top window, shown only while a screen is being shared. The
+   whole strip is the drag handle — the window has no frame to grab — and every
+   button opts back out of it, or a click would just move the block. */
+
+.sbar {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  background: #11121a;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  -webkit-app-region: drag;
+  overflow: hidden;
+}
+
+.sbar-live {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: auto;
+  font-size: 11.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: rgba(242, 243, 248, 0.85);
+}
+
+.sbar-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+}
+
+.sbar-btn {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+
+.sbar-btn svg {
+  width: 16px;
+  height: 16px;
+  stroke: #f2f3f8;
+  stroke-width: 2;
+  fill: none;
+}
+
+.sbar-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.sbar-btn.off {
+  background: rgba(239, 68, 68, 0.22);
+}
+
+.sbar-btn.off svg {
+  stroke: #fca5a5;
+}
+
+.sbar-btn.stop svg {
+  fill: #f2f3f8;
+  stroke: none;
+}
+
+.sbar-btn.end {
+  background: #ef4444;
+}
+
+/* ── THE SCREEN-SHARE PICKER ───────────────────────────────────────────────
+   Asked before anything is captured: which surface, and whether the sound of
+   this machine goes with it. Electron has no picker of its own on Windows or
+   Linux — `useSystemPicker` is macOS-only — so without this the shell would be
+   choosing for people, and always with the sound on. */
+
+.share-sheet {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(9, 10, 16, 0.66);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  z-index: 20;
+}
+
+.share-card {
+  width: min(620px, 88%);
+  max-height: 82%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  border-radius: 18px;
+  background: #1b1d29;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.45);
+}
+
+.share-head {
+  font-size: 14px;
+  font-weight: 800;
+  color: #f2f3f8;
+}
+
+.share-portal,
+.share-empty {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: rgba(242, 243, 248, 0.6);
+}
+
+.share-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  overflow-y: auto;
+  min-height: 0;
+  padding: 2px;
+}
+
+.share-src {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  text-align: left;
+}
+
+.share-src:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.share-src.on {
+  border-color: var(--acc);
+  background: rgba(124, 108, 248, 0.18);
+}
+
+.share-thumb {
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #11121a;
+}
+
+.share-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.share-blank {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #2a2d3d, #1b1d29);
+}
+
+.share-src-name {
+  font-size: 11.5px;
+  color: rgba(242, 243, 248, 0.8);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.share-audio {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: rgba(242, 243, 248, 0.85);
+  cursor: pointer;
+}
+
+.share-audio.off {
+  cursor: default;
+  color: rgba(242, 243, 248, 0.5);
+}
+
+.share-audio input {
+  margin-top: 2px;
+  accent-color: var(--acc);
+}
+
+.share-why {
+  font-style: normal;
+  color: rgba(242, 243, 248, 0.45);
+}
+
+.share-acts {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.share-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #f2f3f8;
+  background: rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+}
+
+.share-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.share-btn.prim {
+  background: var(--acc);
+}
+
+.share-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* The folded call: the prototype's own pill, in the title bar next to music.
+   Same shape on purpose — it is the same idea — but a live green edge, so two
+   pills side by side are not mistaken for each other. It is not draggable the
+   way the player is: there is nothing to scrub. */
+.call-pill {
+  cursor: default;
+  border-color: rgba(34, 197, 94, 0.5);
+}
+
+.call-pill-cov {
+  background: linear-gradient(135deg, #22c55e, #06b6d4);
+  cursor: pointer;
+}
+
+.call-pill-end svg {
+  stroke: #ef4444;
+}
+
+/* Two pills and the window buttons share one row, and that row is the first
+   thing to run out of width: the player alone asks for 412px. Add a folded call
+   beside it and the pair used to run straight over the close button instead of
+   giving way — `.pill` is positioned, so it paints above the controls whatever
+   the source order says.
+
+   Now the pills shrink and the buttons never do. What gives way inside a pill is
+   the track title, never the transport; while a call is folded the player starts
+   from the narrow title the prototype already uses on a small window; and below
+   860px the player steps aside altogether, because a call in progress outranks
+   background music and the player is one click away in its own section. */
+.tbar-right .pill-wrap,
+.tbar-right .pill {
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+.tbar-right .pill-btns {
+  flex-shrink: 0;
+}
+
+.tbar-right.with-call .pill-wrap {
+  width: auto;
+}
+
+.tbar-right.with-call .pill-wrap .pill-info {
+  width: 88px;
+}
+
+/* The last line of defence: whatever runs out of room, the buttons stay on top
+   and clickable. */
+.wc-wind {
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 860px) {
+  .tbar-right.with-call .pill-wrap {
+    display: none;
+  }
+}
+
+/* Version history, inside the update screen rather than in a browser. The rows
+   borrow the settings list's own spacing so the block reads as part of the
+   screen it opened from, not as a window that arrived on top of it. */
+.rel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 4px 0 8px;
+}
+
+.rel-note {
+  padding: 8px 4px;
+}
+
+.rel-item {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--inp);
+  border: 1px solid var(--brd);
+}
+
+.rel-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.rel-ver {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--txt);
+}
+
+.rel-tag {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 8px;
+  background: var(--hov);
+  color: var(--txt2);
+}
+
+.rel-tag.now {
+  background: rgba(34, 197, 94, 0.16);
+  color: #22c55e;
+}
+
+.rel-date {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--txt2);
+}
+
+/* Release notes are written as text with line breaks, and they stay that way:
+   rendering them as markup would mean trusting a remote page with the inside of
+   the app. */
+.rel-notes {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--txt2);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.rel-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* The presence dot takes the colour of the status behind it. The prototype's
+   own rule paints it green and knows nothing of statuses, so everything that
+   draws a dot sets `--dot` — green stays the fallback for someone who is simply
+   here. */
+.av.ol::after {
+  background: var(--dot, #22c55e);
+}
+
+/* The ring. A card in the middle of the `.sov` overlay the settings already use. */
+.call-in-card {
+  width: 300px;
+  padding: 26px 22px 20px;
+  border-radius: 20px;
+  background: var(--bg);
+  border: 1px solid var(--brd);
+  box-shadow: 0 22px 60px rgba(20, 20, 45, 0.22);
+  text-align: center;
+  animation: pillIn 0.4s cubic-bezier(0.22, 1.1, 0.32, 1);
+}
+
+.call-in-av {
+  width: 74px;
+  height: 74px;
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 25px;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(135deg, var(--acc), #06b6d4);
+}
+
+.call-in-name {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--txt);
+}
+
+.call-in-sub {
+  font-size: 12px;
+  color: var(--txt2);
+  margin-top: 3px;
+}
+
+.call-in-acts {
+  display: flex;
+  justify-content: center;
+  gap: 26px;
+  margin-top: 20px;
+}
+
+.call-in-btn {
+  width: 52px;
+  height: 52px;
+  border: none;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: transform 0.14s ease, filter 0.14s ease;
+}
+
+.call-in-btn:hover {
+  transform: translateY(-2px);
+}
+
+.call-in-btn svg {
+  width: 22px;
+  height: 22px;
+  stroke: #fff;
+  stroke-width: 2;
+  fill: none;
+}
+
+.call-in-btn.accept {
+  background: #22c55e;
+}
+
+.call-in-btn.decline {
+  background: #ef4444;
+}
+
+/* Screens the prototype does not contain: sign-in, the mail mock banner, and the
+   settings surfaces built on top of it. All of it uses the prototype's own
+   variables and metrics so it belongs to the same interface. */
+
+/* `height: 100%` only works when every ancestor has a height, and this screen
+   renders before the shell's layout exists — so the card sat at the top of the
+   window instead of the middle of it. */
+.auth {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: var(--wall);
+}
+
+.auth-card {
+  width: 372px;
+  padding: 26px 24px;
+  background: var(--bg);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+  border: 1px solid var(--brd);
+  border-radius: 18px;
+  box-shadow: 0 18px 50px rgba(20, 20, 45, 0.12);
+}
+
+.auth-card h1 {
+  margin: 0 0 3px;
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  color: var(--txt);
+}
+
+.auth-sub {
+  margin: 0 0 18px;
+  color: var(--txt2);
+  font-size: 12.5px;
+}
+
+.fld {
+  margin-bottom: 11px;
+}
+
+.fld label {
+  display: block;
+  font-size: 11.5px;
+  color: var(--txt2);
+  margin-bottom: 5px;
+  font-weight: 600;
+}
+
+.fld input,
+.fld select,
+.fld textarea {
+  width: 100%;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 11px;
+  border: 1px solid var(--brd);
+  background: var(--inp);
+  color: var(--txt);
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.fld textarea {
+  height: auto;
+  padding: 9px 12px;
+  resize: vertical;
+}
+
+.fld input:focus,
+.fld select:focus {
+  border-color: var(--acc);
+}
+
+.btn-main {
+  width: 100%;
+  height: 40px;
+  border: none;
+  border-radius: 11px;
+  background: var(--acc);
+  color: #fff;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 6px;
+  transition: filter 0.15s;
+}
+
+.btn-main:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.btn-main:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.btn-soft {
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--brd);
+  border-radius: 10px;
+  background: var(--inp);
+  color: var(--txt);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.btn-soft:hover:not(:disabled) {
+  background: var(--hov);
+}
+
+.btn-soft:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.auth-switch {
+  margin-top: 14px;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--txt2);
+}
+
+.auth-switch button {
+  border: none;
+  background: none;
+  color: var(--acc);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* "Remember me" on the sign-in form. Uses the prototype's own `.tog`, so the
+   switch is the same object here as in settings. */
+.auth-remember {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin: 14px 0 4px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.auth-remember-text {
+  min-width: 0;
+}
+
+.auth-remember-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--txt);
+}
+
+.auth-remember-sub {
+  font-size: 11.5px;
+  color: var(--txt2);
+  line-height: 1.4;
+  margin-top: 1px;
+}
+
+.msg-err,
+.msg-ok {
+  margin-top: 11px;
+  padding: 8px 11px;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.msg-err {
+  background: rgba(239, 68, 68, 0.13);
+  color: #b91c1c;
+}
+
+.msg-ok {
+  background: rgba(34, 197, 94, 0.14);
+  color: #15803d;
+}
+
+.hint {
+  font-size: 11.5px;
+  color: var(--txt2);
+  line-height: 1.5;
+  margin: 12px 0 0;
+}
+
+/* prototype.css styles `.np-prog .pbar` (height and colour) but never defines
+   `.pbar`, `.pbar-fill` or `.mp-time` themselves, so the progress bar collapses
+   to zero width — in the prototype too. These are the missing base rules; the
+   sizes come from the overrides that are already there. */
+.pbar {
+  flex: 1;
+  border-radius: 3px;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.pbar-fill {
+  height: 100%;
+  width: 0;
+  border-radius: 3px;
+  background: #fff;
+  transition: width 0.25s linear;
+}
+
+.mp-time {
+  font-size: 11px;
+  width: 34px;
+  font-variant-numeric: tabular-nums;
+}
+
+.mp-time.r {
+  text-align: right;
+}
+
+/* Same omission for the now-playing transport: prototype.css only has
+   `.np-btns .pb` overrides, so without this the buttons fall back to the
+   browser's default chrome. Mirrors `.pb2`, the pill's smaller variant. */
+.pb {
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-family: inherit;
+  transition:
+    background 0.22s ease,
+    color 0.22s ease,
+    transform 0.22s cubic-bezier(0.22, 0.9, 0.28, 1);
+}
+
+.pb:active {
+  transform: scale(0.94);
+}
+
+.pb svg {
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+}
+
+.pb svg.fl {
+  fill: currentColor;
+  stroke: none;
+}
+
+/* The prototype opens message actions from a context menu, so it has no styling
+   for an inline row. Kept hidden until hover: a permanent strip of buttons in
+   every bubble drowns the text it belongs to. */
+.m {
+  padding-bottom: 8px;
+}
+
+.m-tools {
+  position: absolute;
+  top: -13px;
+  right: 6px;
+  display: none;
+  gap: 1px;
+  padding: 2px;
+  background: var(--solid);
+  border: 1px solid var(--brd);
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(20, 20, 45, 0.13);
+  z-index: 2;
+}
+
+.m:hover .m-tools {
+  display: flex;
+}
+
+.m-tools button {
+  width: 26px;
+  height: 24px;
+  border: none;
+  border-radius: 7px;
+  background: none;
+  color: var(--txt2);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.m-tools button:hover {
+  background: var(--hov);
+  color: var(--acc);
+}
+
+.m-tools svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+}
