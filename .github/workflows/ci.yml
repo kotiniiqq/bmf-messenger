@@ -57,7 +57,7 @@ jobs:
           docker run -d --name minio -p 9000:9000 \
             -e MINIO_ROOT_USER=bmfminio \
             -e MINIO_ROOT_PASSWORD=bmfminio-secret \
-            minio/minio:latest server /data
+            chainguard/minio:latest server /data
           for i in $(seq 1 30); do
             curl -sf http://localhost:9000/minio/health/live && break
             sleep 2
