@@ -69,3 +69,8 @@ Access tokens last 15 minutes and are stateless; refresh tokens are opaque, rota
 and last 30 days. Revoking a session takes effect immediately, not when the access token expires.
 
 Optional: `npm run geoip -w server` downloads the city database shown in the session list.
+
+## Contact
+
+Feedback, ideas, job offers or custom projects (n8n, MCP, AI automation): [kotiniiqq@gmail.com](mailto:kotiniiqq@gmail.com).
+Bug reports and feature requests are welcome in [Issues](https://github.com/kotiniiqq/bmf-messenger/issues).
