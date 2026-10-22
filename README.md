@@ -3,6 +3,8 @@
 Desktop messenger with built-in mail, music player, notes and an AI assistant.
 Windows and Linux. Mobile clients are planned; the protocol is designed for them already.
 
+<img src="https://raw.githubusercontent.com/kotiniiqq/bmf-messenger/main/docs/assets/overview.svg" width="640" alt="bmf-messenger diagram">
+
 > Public copy of a personal product, built solo. The private repository has
 > 110 commits (31 Jul – 4 Aug 2026, 35 merged pull requests); this copy starts with a single
 > commit and leaves out the production server's address. A beta ran with a small group of friends.
